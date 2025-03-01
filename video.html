@@ -85,6 +85,22 @@
         #mute-button.muted {
             background-color: #4caf50;
         }
+
+        #home-button {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#home-button:hover {
+    background-color: #0056b3;
+}
     </style>
 </head>
 <body>
@@ -96,6 +112,7 @@
     <button onclick="sendMessage()">Kirim</button>
 
     <button id="mute-button" onclick="toggleMute()">🔊 Mute</button>
+    <button id="home-button" onclick="goHome()">Home</button>
 
     <audio id="background-music" loop>
         <source src="Asset/music2.mp3" type="audio/mpeg">
@@ -249,7 +266,10 @@
     };
 });
 
-
+function goHome() {
+    window.location.href = "index.html"; // Ganti dengan halaman home yang sesuai
+}
+        
     </script>
 
 </body>
