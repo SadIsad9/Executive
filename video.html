@@ -121,6 +121,13 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         });
 
+        if ("Notification" in window) {
+            Notification.requestPermission().then(permission => {
+                console.log("Izin notifikasi:", permission);
+            });
+        }
+
+
         function showNotification(user, message) {
             if (document.hidden && "Notification" in window) {
                 Notification.requestPermission().then(permission => {
