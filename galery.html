@@ -56,7 +56,6 @@
     </nav>
 
     <div class="container mb-16">
-        <h1 class="text-center mb-4">Galeri Member</h1>
         
         <div class="row" id="gallery">
             <!-- Gambar akan dimasukkan dengan JavaScript -->
@@ -64,7 +63,7 @@
     </div>
     
     <div class="text-center mt-4">
-    <a href="home.html" class="btn btn-light">🔙 Kembali ke Home</a>
+    <a href="home.html" class="btn btn-dark">🔙 Kembali ke Home</a>
 </div>
 
     <footer class="bg-black text-center text-white py-3 mt-5">
@@ -174,25 +173,45 @@
             if (!commentText) return;
 
             const commentRef = ref(db, `gallery/${photoId}/comments`);
-            push(commentRef, { text: commentText });
+            const newComment = {
+                user: localStorage.getItem("username") || "Anonim",
+                text: commentText,
+                timestamp: Date.now()
+            };
 
+            push(commentRef, newComment);
             commentInput.value = "";
-            loadComments(photoId);
+
+            // Langsung tampilkan komentar baru tanpa menunggu dari Firebase
+            const commentList = document.getElementById(`comment-list-${photoId}`);
+            const commentElement = document.createElement("p");
+            commentElement.innerHTML = `<strong>${newComment.user}:</strong> ${newComment.text}`;
+            commentList.appendChild(commentElement);
         };
 
-        // Fungsi Load Komentar
+        // Menampilkan komentar secara real-time
         function loadComments(photoId) {
-            const commentRef = ref(db, `gallery/${photoId}/comments`);
             const commentList = document.getElementById(`comment-list-${photoId}`);
+            const commentRef = ref(db, `gallery/${photoId}/comments`);
 
             onValue(commentRef, (snapshot) => {
-                commentList.innerHTML = "";
+                commentList.innerHTML = ""; // Kosongkan komentar yang lama sebelum memuat yang baru
                 snapshot.forEach((childSnapshot) => {
-                    const comment = childSnapshot.val().text;
-                    commentList.innerHTML += `<p>💬 ${comment}</p>`;
+                    const comment = childSnapshot.val();
+                    const commentElement = document.createElement("p");
+                    commentElement.innerHTML = `<strong>${comment.user}:</strong> ${comment.text}`;
+                    commentList.appendChild(commentElement);
                 });
             });
         }
+
+        // Memanggil fungsi loadComments setiap kali halaman dimuat ulang
+        window.onload = () => {
+            images.forEach((img, index) => {
+                const photoId = `photo${index + 1}`;
+                loadComments(photoId); // Memuat komentar untuk setiap foto
+            });
+        };
     </script>
 
 </body>
