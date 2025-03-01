@@ -170,6 +170,34 @@
 
     // Atur volume musik (opsional)
     bgMusic.volume = 0.5;
+
+
+    // Tambahkan elemen audio untuk efek suara
+const notificationSound = new Audio("Asset/notif.mp3");
+
+// Fungsi untuk memainkan suara saat ada pesan baru
+function playNotificationSound() {
+    notificationSound.play().catch(error => console.log("Gagal memutar suara:", error));
+}
+
+// Fungsi update chat (diperbarui dengan suara notif)
+onValue(chatRef, (snapshot) => {
+    const chatBox = document.getElementById("chat-box");
+    chatBox.innerHTML = "";
+    snapshot.forEach((childSnapshot) => {
+        const data = childSnapshot.val();
+        const messageClass = data.name === document.getElementById("username").value ? "user" : "other";
+        chatBox.innerHTML += `
+            <div class="message ${messageClass}">
+                <strong>${data.name}:</strong> ${data.text}
+                <div class="timestamp">${data.time}</div>
+            </div>
+        `;
+    });
+
+    chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll
+    playNotificationSound(); // Mainkan suara notifikasi saat ada pesan baru
+});
 </script>
     </script>
     <script src="sw.js"></script>
