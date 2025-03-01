@@ -3,17 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Executive - Home</title>
-    
-    <!-- Bootstrap CDN -->
+    <title>Login</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-<body>
-    <h1> Web sedang dalam pengembangan harap tunggu</h1>
-    <!-- Footer -->
-    <footer class="bg-primary text-white text-center py-3">
-        <p>&copy; 2024 Executive™ Irsyad</p>
-    </footer>
+    <style>
+        body {
+            background-color: #000; /* Hitam */
+            color: #FFF; /* Putih */
+        }
+        .login-container {
+            max-width: 350px;
+            background: #FFF; /* Putih */
+            color: #000; /* Hitam */
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .btn-custom {
+            background-color: #000; /* Hitam */
+            color: #FFF; /* Putih */
+            border: 1px solid #FFF;
+        }
+        .btn-custom:hover {
+            background-color: #333; /* Abu-abu gelap */
+        }
+    </style>
+</head>
+<body class="d-flex justify-content-center align-items-center vh-100">
+    <div class="login-container shadow-lg">
+        <h2 class="mb-3">Login</h2>
+        <input type="text" id="username" class="form-control mb-3" placeholder="Masukkan nama">
+        <button class="btn btn-custom mt-3 w-100" onclick="login()">Login</button>
+    </div>
 
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-database.js";
+
+        // 🔥 Konfigurasi Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCTyb-YVzizOUj6eMV2GoywQ7P_SeIaS0A",
+            authDomain: "executive1-f9c84.firebaseapp.com",
+            databaseURL: "https://executive1-f9c84-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "executive1-f9c84",
+            storageBucket: "executive1-f9c84.appspot.com",
+            messagingSenderId: "241468644770",
+            appId: "1:241468644770:web:c3310ca1519c16b75026fb"
+        };
+
+        // 🔥 Inisialisasi Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // 📌 Fungsi Login
+        function login() {
+            const username = document.getElementById("username").value.trim();
+
+            if (!username) {
+                alert("Harap masukkan nama!");
+                return;
+            }
+
+            const userRef = ref(database, "users/" + username);
+
+            // **Simpan username langsung ke database**
+            set(userRef, { name: username })
+                .then(() => {
+                    localStorage.setItem("username", username);
+                    window.location.href = "home.html"; // Ganti dengan halaman tujuan setelah login
+                })
+                .catch((error) => {
+                    console.error("Gagal menyimpan user ke Firebase:", error);
+                });
+        }
+
+        // 🔥 Buat fungsi `login` bisa diakses di global scope
+        window.login = login;
+    </script>
 </body>
 </html>

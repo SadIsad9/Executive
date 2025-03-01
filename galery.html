@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expadase Class - Gallery</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Efek grayscale pada gambar */
+        .card-img-top {
+            filter: grayscale(100%);
+            transition: transform 0.3s ease, filter 0.3s ease;
+            object-fit: cover;
+            height: 400px; /* Sesuaikan tinggi agar tetap proporsional */
+        }
+        .card-img-top:hover {
+            transform: scale(1.05);
+            filter: grayscale(0%);
+        }
+
+        /* Styling tombol */
+        .btn:hover {
+            transform: scale(1.05);
+            transition: transform 0.3s ease;
+        }
+
+        /* Komentar */
+        .comment-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        /* Tombol like sudah diklik */
+        .btn-like:disabled {
+            background-color: #6c757d;
+        }
+    </style>
+</head>
+<body class="bg-dark text-white">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Executive Community</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link active" href="home.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="galery.html">Gallery</a></li>
+                    <li class="nav-item"><a class="nav-link" href="video.html">Random Video</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mb-16">
+        <h1 class="text-center mb-4">Galeri Member</h1>
+        
+        <div class="row" id="gallery">
+            <!-- Gambar akan dimasukkan dengan JavaScript -->
+        </div>
+    </div>
+    
+    <div class="text-center mt-4">
+    <a href="home.html" class="btn btn-light">🔙 Kembali ke Home</a>
+</div>
+
+    <footer class="bg-black text-center text-white py-3 mt-5">
+        &copy; 2025 Expadase Class
+    </footer>
+
+    <script type="module">
+        // Import Firebase
+        // Import Firebase SDK
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+    import { getDatabase, ref, set, get, push, onValue } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-database.js";
+
+    // Konfigurasi Firebase dengan databaseURL
+    const firebaseConfig = {
+        apiKey: "AIzaSyCTyb-YVzizOUj6eMV2GoywQ7P_SeIaS0A",
+        authDomain: "executive1-f9c84.firebaseapp.com",
+        projectId: "executive1-f9c84",
+        storageBucket: "executive1-f9c84.appspot.com",
+        messagingSenderId: "241468644770",
+        appId: "1:241468644770:web:c3310ca1519c16b75026fb",
+        databaseURL: "https://executive1-f9c84-default-rtdb.asia-southeast1.firebasedatabase.app" // Perbaikan
+    };
+
+    // Inisialisasi Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    console.log("Firebase Connected!");
+
+        // Data Gambar Member (8 Foto)
+        const images = [
+            "A.jpg", "B.jpg", "C.jpg", "D.jpg",
+            "E.jpg", "F.jpg", 
+        ];
+
+        // Generate Galeri
+        const gallery = document.getElementById("gallery");
+        images.forEach((img, index) => {
+            const photoId = `photo${index + 1}`;
+            gallery.innerHTML += `
+                <div class="col-md-6 mb-4">
+                    <div class="card bg-dark text-white shadow-lg">
+                        <img src="Asset/${img}" class="card-img-top" alt="Member ${index + 1}">
+                        <div class="card-body text-center">
+                            <button class="btn btn-outline-light btn-sm btn-like" id="btn-like-${photoId}" onclick="likePhoto('${photoId}')">
+                                ❤️ <span id="like-${photoId}">0</span>
+                            </button>
+                            <button class="btn btn-outline-light btn-sm" onclick="toggleComments('${photoId}')">
+                                💬 Komentar
+                            </button>
+                            <div id="comments-${photoId}" class="mt-2 d-none">
+                                <input type="text" id="comment-input-${photoId}" class="form-control form-control-sm mb-2" placeholder="Tulis komentar...">
+                                <button class="btn btn-sm btn-success" onclick="addComment('${photoId}')">Kirim</button>
+                                <div id="comment-list-${photoId}" class="comment-list"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            updateLikes(photoId); // Update like untuk setiap foto
+            loadComments(photoId); // Memuat komentar untuk setiap foto
+        });
+
+        // Fungsi Like (hanya bisa sekali per user)
+        window.likePhoto = (photoId) => {
+            const likeRef = ref(db, `gallery/${photoId}/likes`);
+            
+            if (localStorage.getItem(`liked-${photoId}`)) {
+                alert("Kamu sudah like foto ini!");
+                return;
+            }
+
+            get(likeRef).then((snapshot) => {
+                let currentLikes = snapshot.exists() ? snapshot.val() : 0;
+                let newLikes = currentLikes + 1;
+
+                set(likeRef, newLikes);
+                localStorage.setItem(`liked-${photoId}`, "true");
+
+                document.getElementById(`btn-like-${photoId}`).disabled = true;
+            });
+        };
+
+        // Update jumlah like secara real-time
+        function updateLikes(photoId) {
+            const likeRef = ref(db, `gallery/${photoId}/likes`);
+
+            onValue(likeRef, (snapshot) => {
+                document.getElementById(`like-${photoId}`).innerText = snapshot.exists() ? snapshot.val() : 0;
+                
+                if (localStorage.getItem(`liked-${photoId}`)) {
+                    document.getElementById(`btn-like-${photoId}`).disabled = true;
+                }
+            });
+        }
+
+        // Fungsi Tampilkan/Sembunyikan Komentar
+        window.toggleComments = (photoId) => {
+            document.getElementById(`comments-${photoId}`).classList.toggle("d-none");
+        };
+
+        // Fungsi Tambah Komentar
+        window.addComment = (photoId) => {
+            const commentInput = document.getElementById(`comment-input-${photoId}`);
+            const commentText = commentInput.value.trim();
+            if (!commentText) return;
+
+            const commentRef = ref(db, `gallery/${photoId}/comments`);
+            push(commentRef, { text: commentText });
+
+            commentInput.value = "";
+            loadComments(photoId);
+        };
+
+        // Fungsi Load Komentar
+        function loadComments(photoId) {
+            const commentRef = ref(db, `gallery/${photoId}/comments`);
+            const commentList = document.getElementById(`comment-list-${photoId}`);
+
+            onValue(commentRef, (snapshot) => {
+                commentList.innerHTML = "";
+                snapshot.forEach((childSnapshot) => {
+                    const comment = childSnapshot.val().text;
+                    commentList.innerHTML += `<p>💬 ${comment}</p>`;
+                });
+            });
+        }
+    </script>
+
+</body>
+</html>
