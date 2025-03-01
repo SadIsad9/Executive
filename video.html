@@ -3,68 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Executive Community - Chat Room</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Chat Room</title>
     <style>
         body {
-            background-color: black;
-            color: white;
-        }
-        .chat-container {
-            max-width: 600px;
-            margin: auto;
-            background-color: #1a1a1a;
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            text-align: center;
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
         }
-        .message {
-            padding: 8px;
+
+        #chat-box {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ffffff;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #1e1e1e;
             border-radius: 5px;
-            margin-bottom: 5px;
         }
-        .message.user {
-            background-color: #007bff;
-            color: white;
+
+        .message {
+            padding: 10px;
+            margin: 5px;
+            border-radius: 5px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .user {
+            background-color: #3a3a3a;
             text-align: right;
+            margin-left: auto;
         }
-        .message.other {
-            background-color: #333;
+
+        .other {
+            background-color: #555555;
             text-align: left;
+            margin-right: auto;
         }
+
         .timestamp {
             font-size: 12px;
-            color: #bbb;
+            color: #aaaaaa;
         }
-        #back-home {
-            margin-top: 10px;
-            display: block;
-            text-align: center;
+
+        #typing-indicator {
+            font-style: italic;
+            color: #aaaaaa;
+        }
+
+        input, button {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            border: 1px solid #ffffff;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 5px;
+        }
+
+        input {
+            width: 60%;
+        }
+
+        button:hover {
+            background-color: #333333;
+        }
+
+        #mute-button {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #mute-button.muted {
+            background-color: #4caf50;
         }
     </style>
 </head>
 <body>
 
-    <div class="container mt-5">
-        <h2 class="text-center">Chat Room</h2>
-        <div class="chat-container">
-            <div id="chat-box" class="mb-3" style="max-height: 300px; overflow-y: auto;"></div>
-            <input type="text" id="username" class="form-control mb-2" placeholder="Masukkan Nama...">
-            <input type="text" id="message" class="form-control" placeholder="Tulis pesan...">
-            <button onclick="sendMessage()" class="btn btn-light mt-2">Kirim</button>
-            <button onclick="toggleMusic()" class="btn btn-warning mt-2">Mute/Unmute</button>
-            <a href="index.html" id="back-home" class="btn btn-danger mt-2">Kembali ke Home</a>
-        </div>
-    </div>
+    <input type="text" id="username" placeholder="Masukkan nama..." required>
+    <div id="chat-box"></div>
+    <p id="typing-indicator"></p>
+    <input type="text" id="message" placeholder="Ketik pesan..." required>
+    <button onclick="sendMessage()">Kirim</button>
 
-    <!-- Backsound -->
-    <audio id="bg-music" autoplay loop>
-    <source src="Asset/music1.mp3" type="audio/mpeg">
-</audio>
+    <button id="mute-button" onclick="toggleMute()">🔊 Mute</button>
+
+    <audio id="background-music" loop>
+        <source src="Asset/music2.mp3" type="audio/mpeg">
+        Browser Anda tidak mendukung tag audio.
+    </audio>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
-        import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-database.js";
+        import { getDatabase, ref, push, onValue, set } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCTyb-YVzizOUj6eMV2GoywQ7P_SeIaS0A",
@@ -79,11 +119,10 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const chatRef = ref(db, "chat-room");
+        const typingRef = ref(db, "typing-status");
 
         document.getElementById("message").addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                sendMessage();
-            }
+            if (event.key === "Enter") sendMessage();
         });
 
         window.sendMessage = function () {
@@ -101,106 +140,117 @@
             });
 
             document.getElementById("message").value = "";
+            set(typingRef, { name: username, typing: false });
         };
 
         onValue(chatRef, (snapshot) => {
             const chatBox = document.getElementById("chat-box");
             chatBox.innerHTML = "";
+            let lastSender = null;
+
             snapshot.forEach((childSnapshot) => {
                 const data = childSnapshot.val();
                 const messageClass = data.name === document.getElementById("username").value ? "user" : "other";
+
                 chatBox.innerHTML += `
                     <div class="message ${messageClass}">
                         <strong>${data.name}:</strong> ${data.text}
                         <div class="timestamp">${data.time}</div>
                     </div>
                 `;
-                showNotification(data.name, data.text);
+
+                if (data.name !== document.getElementById("username").value && lastSender !== data.name) {
+                    playNotificationSound();
+                    showNotification(data.name, data.text);
+                }
+
+                lastSender = data.name;
             });
 
             chatBox.scrollTop = chatBox.scrollHeight;
         });
 
         if ("Notification" in window) {
-            Notification.requestPermission().then(permission => {
-                console.log("Izin notifikasi:", permission);
-            });
+            Notification.requestPermission();
         }
 
-
         function showNotification(user, message) {
-            if (document.hidden && "Notification" in window) {
-                Notification.requestPermission().then(permission => {
-                    if (permission === "granted") {
-                        new Notification("Pesan Baru", { 
-                            body: `${user}: ${message}`, 
-                            icon: "Asset/icon.png" // Pastikan ada file ikon di folder Assets
-                        });
-                    }
+            if (document.hidden && Notification.permission === "granted") {
+                new Notification("Pesan Baru", {
+                    body: `${user}: ${message}`,
+                    icon: "Asset/icon.png"
                 });
             }
         }
 
-        // Backsound
-        const musicFiles = [
-        "Asset/music1.mp3",
-        "Asset/music2.mp3",
-        "Asset/music3.mp3",
-        "Asset/music4.mp3",
-        "Asset/music5.mp3"
-    ];
+        const notificationSound = new Audio("Asset/notif.mp3");
 
-    let currentTrack = 0;
-    const bgMusic = document.getElementById("bg-music");
+        function playNotificationSound() {
+            notificationSound.play().catch(error => console.log("Gagal memutar suara:", error));
+        }
 
-    function playNextTrack() {
-        currentTrack = (currentTrack + 1) % musicFiles.length;
-        bgMusic.src = musicFiles[currentTrack];
-        bgMusic.play();
+        document.getElementById("message").addEventListener("input", function() {
+            const username = document.getElementById("username").value.trim();
+            if (!username) return;
+
+            set(typingRef, { name: username, typing: true });
+
+            clearTimeout(window.typingTimeout);
+            window.typingTimeout = setTimeout(() => {
+                set(typingRef, { name: username, typing: false });
+            }, 1500);
+        });
+
+        const typingIndicator = document.getElementById("typing-indicator");
+
+        onValue(typingRef, (snapshot) => {
+            const data = snapshot.val();
+            typingIndicator.textContent = data && data.typing ? `${data.name} sedang mengetik...` : "";
+        });
+
+        window.addEventListener("beforeunload", () => {
+            set(typingRef, { name: "", typing: false });
+        });
+
+        // Auto-play musik saat halaman dibuka
+        const bgMusic = document.getElementById("background-music");
+        window.addEventListener("click", () => bgMusic.play(), { once: true });
+
+        function toggleMute() {
+            const muteButton = document.getElementById("mute-button");
+            if (bgMusic.muted) {
+                bgMusic.muted = false;
+                muteButton.textContent = "🔊 Mute";
+                muteButton.classList.remove("muted");
+            } else {
+                bgMusic.muted = true;
+                muteButton.textContent = "🔇 Unmute";
+                muteButton.classList.add("muted");
+            }
+        }
+        
+        document.addEventListener("DOMContentLoaded", () => {
+    const bgMusic = document.getElementById("background-music");
+    const muteButton = document.getElementById("mute-button");
+
+    if (!bgMusic) {
+        console.error("Elemen <audio> tidak ditemukan!");
+        return;
     }
 
-    bgMusic.onended = playNextTrack;
-
-    // Jika autoplay diblokir, musik mulai setelah interaksi pertama
-    document.addEventListener("click", () => {
-        if (bgMusic.paused) {
-            bgMusic.play();
+    window.toggleMute = function() {
+        if (bgMusic.muted) {
+            bgMusic.muted = false;
+            muteButton.textContent = "🔊 Unmute";
+        } else {
+            bgMusic.muted = true;
+            muteButton.textContent = "🔇 Mute";
         }
-    }, { once: true });
-
-    // Atur volume musik (opsional)
-    bgMusic.volume = 0.5;
-
-
-    // Tambahkan elemen audio untuk efek suara
-const notificationSound = new Audio("Asset/notif.mp3");
-
-// Fungsi untuk memainkan suara saat ada pesan baru
-function playNotificationSound() {
-    notificationSound.play().catch(error => console.log("Gagal memutar suara:", error));
-}
-
-// Fungsi update chat (diperbarui dengan suara notif)
-onValue(chatRef, (snapshot) => {
-    const chatBox = document.getElementById("chat-box");
-    chatBox.innerHTML = "";
-    snapshot.forEach((childSnapshot) => {
-        const data = childSnapshot.val();
-        const messageClass = data.name === document.getElementById("username").value ? "user" : "other";
-        chatBox.innerHTML += `
-            <div class="message ${messageClass}">
-                <strong>${data.name}:</strong> ${data.text}
-                <div class="timestamp">${data.time}</div>
-            </div>
-        `;
-    });
-
-    chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll
-    playNotificationSound(); // Mainkan suara notifikasi saat ada pesan baru
+    };
 });
-</script>
+
+
     </script>
-    <script src="sw.js"></script>
 
 </body>
 </html>
