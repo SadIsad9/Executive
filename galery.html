@@ -49,13 +49,19 @@
     background: #343a40;
     padding: 10px;
     border-radius: 5px;
+ 
 }
 
 /* Tombol like sudah diklik */
 .btn-like:disabled {
     background-color: #6c757d;
 }
-    </style>
+.timestamp {
+    color: white !important;
+    font-size: 12px;
+    opacity: 0.7; /* Biar lebih soft */
+}
+</style>
 </head>
 <body class="bg-dark text-white">
 
@@ -193,11 +199,14 @@
             if (!commentText) return;
 
             const commentRef = ref(db, `gallery/${photoId}/comments`);
-            const newComment = {
-                user: localStorage.getItem("username") || "Anonim",
-                text: commentText,
-                timestamp: Date.now()
-            };
+            const now = new Date();
+const timeString = now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+
+const newComment = {
+    user: localStorage.getItem("username") || "Anonim",
+    text: commentText,
+    timestamp: timeString // Simpan waktu dalam format jam:menit
+};
 
             push(commentRef, newComment);
             commentInput.value = "";
@@ -219,7 +228,8 @@
                 snapshot.forEach((childSnapshot) => {
                     const comment = childSnapshot.val();
                     const commentElement = document.createElement("p");
-                    commentElement.innerHTML = `<strong>${comment.user}:</strong> ${comment.text}`;
+                    commentElement.innerHTML = `<strong>${comment.user}:</strong> ${comment.text} <br> 
+<small class="timestamp">${comment.timestamp}</small>`;
                     commentList.appendChild(commentElement);
                 });
             });
